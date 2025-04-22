@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -16,24 +18,27 @@ var (
 	pdfDir    = "./input"
 	imgDir    = "./static/previews"
 	outputDir = "./output"
+	trashDir = "./trash"
 
-	pdfFiles     []string
-	currentIndex int
+	pdfFiles        []string
+	currentIndex    int
 	previousRenamed []string
-	mu           sync.Mutex
+	mu              sync.Mutex
 )
 
 func main() {
 	os.MkdirAll(imgDir, 0755)
 	os.MkdirAll(outputDir, 0755)
-	
+	os.MkdirAll(trashDir, 0755)
+
 	loadPDFFiles()
-	
+
 	http.HandleFunc("/", handleIndex)
 	http.HandleFunc("/next", handleNext)
 	http.HandleFunc("/prev", handlePrev)
 	http.HandleFunc("/rename", handleRename)
 	http.HandleFunc("/append", handleAppend)
+	http.HandleFunc("/trash", handleTrash)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
 	log.Println("Server started at http://localhost:8080")
@@ -71,8 +76,8 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 	preview := renderPreview(current)
 	tmpl := template.Must(template.New("index").Parse(indexHTML))
 	tmpl.Execute(w, map[string]interface{}{
-		"Current": current,
-		"Preview": preview,
+		"Current":         current,
+		"Preview":         preview,
 		"PreviousRenamed": previousRenamed,
 	})
 }
@@ -98,9 +103,17 @@ func handlePrev(w http.ResponseWriter, r *http.Request) {
 func handleRename(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	newName := r.FormValue("newname")
+
+	// Ensure newName has .pdf extension
+	if !strings.HasSuffix(strings.ToLower(newName), ".pdf") {
+		newName = newName + ".pdf"
+
+	}
+
 	mu.Lock()
 	defer mu.Unlock()
 	oldPath := filepath.Join(pdfDir, pdfFiles[currentIndex])
+
 	newPath := filepath.Join(outputDir, newName)
 	os.Rename(oldPath, newPath)
 	previousRenamed = append(previousRenamed, newName)
@@ -119,13 +132,45 @@ func handleAppend(w http.ResponseWriter, r *http.Request) {
 	defer mu.Unlock()
 	current := filepath.Join(pdfDir, pdfFiles[currentIndex])
 	targetPath := filepath.Join(outputDir, target)
+
+	// Print the full command and paths for debugging
+	log.Printf("Attempting to merge PDFs:\nTarget: %s\nCurrent: %s\n", targetPath, current)
+
 	cmd := exec.Command("pdfcpu", "merge", "tmp.pdf", targetPath, current)
+
+	// Capture both stdout and stderr
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
 	err := cmd.Run()
 	if err != nil {
-		http.Error(w, "Failed to merge", 500)
+		log.Printf("Command failed with error: %v\n", err)
+		log.Printf("Stdout: %s\n", stdout.String())
+		log.Printf("Stderr: %s\n", stderr.String())
+		http.Error(w, fmt.Sprintf("Failed to merge: %v\nStdout: %s\nStderr: %s", err, stdout.String(), stderr.String()), 500)
 		return
 	}
+
+	// Print success message with command output
+	log.Printf("Merge successful. Output:\n%s\n", stdout.String())
+
 	os.Rename("tmp.pdf", targetPath)
+	// Remove from list
+	pdfFiles = append(pdfFiles[:currentIndex], pdfFiles[currentIndex+1:]...)
+	if currentIndex >= len(pdfFiles) && currentIndex > 0 {
+		currentIndex--
+	}
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func handleTrash(w http.ResponseWriter, r *http.Request) {
+	mu.Lock()
+	defer mu.Unlock()
+	oldPath := filepath.Join(pdfDir, pdfFiles[currentIndex])
+
+	newPath := filepath.Join(trashDir, pdfFiles[currentIndex])
+	os.Rename(oldPath, newPath)
 	// Remove from list
 	pdfFiles = append(pdfFiles[:currentIndex], pdfFiles[currentIndex+1:]...)
 	if currentIndex >= len(pdfFiles) && currentIndex > 0 {
@@ -138,16 +183,19 @@ const indexHTML = `
 <!DOCTYPE html>
 <html>
 <head>
-	<title>PDF Tool</title>
+	<title>Scan Organizer</title>
 </head>
 <body>
 	<h1>Viewing: {{.Current}}</h1>
-	<img src="{{.Preview}}" style="max-width:100%; height:auto;">
+	<img src="{{.Preview}}" style="max-height:screen;">
 	<form action="/rename" method="post">
-		<input type="text" name="newname" placeholder="Rename to..." required>
+		<input autofocus type="text" name="newname" placeholder="Rename to..." required>
 		<button type="submit">Rename</button>
 	</form>
 	<br>
+	<form action="/trash" method="post">
+		<button type="submit">Trash</button>
+	</form>
 	<form action="/append" method="post">
 		<select name="target">
 			{{range .PreviousRenamed}}
