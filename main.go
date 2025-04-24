@@ -18,11 +18,12 @@ var (
 	pdfDir    = "./input"
 	imgDir    = "./static/previews"
 	outputDir = "./output"
-	trashDir = "./trash"
+	trashDir  = "./trash"
 
 	pdfFiles        []string
 	currentIndex    int
 	previousRenamed []string
+	folders         []string
 	mu              sync.Mutex
 )
 
@@ -32,10 +33,9 @@ func main() {
 	os.MkdirAll(trashDir, 0755)
 
 	loadPDFFiles()
+	loadFolders()
 
 	http.HandleFunc("/", handleIndex)
-	http.HandleFunc("/next", handleNext)
-	http.HandleFunc("/prev", handlePrev)
 	http.HandleFunc("/rename", handleRename)
 	http.HandleFunc("/append", handleAppend)
 	http.HandleFunc("/trash", handleTrash)
@@ -53,6 +53,25 @@ func loadPDFFiles() {
 		}
 	}
 	sort.Strings(pdfFiles)
+}
+
+func loadFolders() {
+	folders = []string{} // Clear existing folders
+	filepath.Walk(outputDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() && path != outputDir {
+			// Get relative path from outputDir
+			relPath, err := filepath.Rel(outputDir, path)
+			if err != nil {
+				return err
+			}
+			folders = append(folders, relPath)
+		}
+		return nil
+	})
+	sort.Strings(folders)
 }
 
 func renderPreview(pdf string) string {
@@ -76,47 +95,36 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 	preview := renderPreview(current)
 	tmpl := template.Must(template.New("index").Parse(indexHTML))
 	tmpl.Execute(w, map[string]interface{}{
-		"Current":         current,
 		"Preview":         preview,
 		"PreviousRenamed": previousRenamed,
+		"Folders":         folders,
 	})
-}
-
-func handleNext(w http.ResponseWriter, r *http.Request) {
-	mu.Lock()
-	defer mu.Unlock()
-	if currentIndex < len(pdfFiles)-1 {
-		currentIndex++
-	}
-	http.Redirect(w, r, "/", http.StatusSeeOther)
-}
-
-func handlePrev(w http.ResponseWriter, r *http.Request) {
-	mu.Lock()
-	defer mu.Unlock()
-	if currentIndex > 0 {
-		currentIndex--
-	}
-	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func handleRename(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	newName := r.FormValue("newname")
+	folder := r.FormValue("folder")
 
 	// Ensure newName has .pdf extension
 	if !strings.HasSuffix(strings.ToLower(newName), ".pdf") {
 		newName = newName + ".pdf"
-
 	}
 
 	mu.Lock()
 	defer mu.Unlock()
 	oldPath := filepath.Join(pdfDir, pdfFiles[currentIndex])
 
-	newPath := filepath.Join(outputDir, newName)
+	// Create the full path including the folder
+	newPath := filepath.Join(outputDir, folder, newName)
+	os.MkdirAll(filepath.Dir(newPath), 0755) // Create folder if it doesn't exist
+
 	os.Rename(oldPath, newPath)
 	previousRenamed = append(previousRenamed, newName)
+
+	// Reload folders after rename
+	loadFolders()
+
 	// Remove from list
 	pdfFiles = append(pdfFiles[:currentIndex], pdfFiles[currentIndex+1:]...)
 	if currentIndex >= len(pdfFiles) && currentIndex > 0 {
@@ -185,28 +193,69 @@ const indexHTML = `
 <head>
 	<title>Scan Organizer</title>
 </head>
-<body>
-	<h1>Viewing: {{.Current}}</h1>
-	<img src="{{.Preview}}" style="max-height:screen;">
-	<form action="/rename" method="post">
-		<input autofocus type="text" name="newname" placeholder="Rename to..." required>
-		<button type="submit">Rename</button>
-	</form>
-	<br>
-	<form action="/trash" method="post">
-		<button type="submit">Trash</button>
-	</form>
-	<form action="/append" method="post">
-		<select name="target">
-			{{range .PreviousRenamed}}
-			<option value="{{.}}">{{.}}</option>
-			{{end}}
-		</select>
-		<button type="submit">Append to selected</button>
-	</form>
-	<br>
-	<a href="/prev">⬅ Prev</a>
-	<a href="/next">Next ➡</a>
+<body style="background-color: #eee">
+	<div style="display: flex;">
+	<div style="flex:none; width: 33%; padding: 2rem">
+		<form action="/rename" method="post">
+			<input id="folderInput" 
+				style="display: block; width: 100%; margin-bottom: 1rem; padding: 0.5rem;" 
+				name="folder" 
+				type="text" 
+				list="folders"
+				placeholder="Select or type folder name..."
+				autocomplete="off"
+				autofocus/>
+			<datalist id="folders">
+				{{range .Folders}}
+				<option value="{{.}}">{{.}}</option>
+				{{end}}
+			</datalist>
+			<input style="display: block; width: 100%; margin-bottom: 1rem; padding: 0.5rem;" 
+				type="text" 
+				name="newname" 
+				placeholder="Rename to..." 
+				required>
+			<button type="submit">Rename</button>
+		</form>
+		<hr>
+		<form action="/trash" method="post">
+			<button id="trashButton" type="submit">Trash</button>
+		</form>
+		<hr>
+		<form action="/append" method="post">
+			<select id="targetSelect" name="target">
+				{{range .PreviousRenamed}}
+				<option value="{{.}}">{{.}}</option>
+				{{end}}
+			</select>
+			<button type="submit">Append to selected</button>
+		</form>
+	</div>
+	<div class="display: block; background-color: white">
+		<img src="{{.Preview}}" style="max-height: 50rem; border: 1px solid #ddd">
+	</div>
+	</div>
+
+	<script>
+		document.addEventListener('keydown', function(e) {
+			if (e.ctrlKey) {
+				switch(e.key) {
+					case 'u':
+						e.preventDefault();
+						document.getElementById('folderInput').focus();
+						break;
+					case 'i':
+						e.preventDefault();
+						document.getElementById('trashButton').focus();
+						break;
+					case 'o':
+						e.preventDefault();
+						document.getElementById('targetSelect').focus();
+						break;
+				}
+			}
+		});
+	</script>
 </body>
 </html>
 `
