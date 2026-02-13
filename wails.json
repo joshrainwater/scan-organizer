@@ -1,0 +1,19 @@
+{
+  "name": "Scan Organizer",
+  "assetdir": "frontend",
+  "frontend:dir": "frontend",
+  "frontend:install": "",
+  "frontend:build": "",
+  "frontend:dev": "",
+  "build:dir": "build",
+  "wailsjsdir": "frontend/wailsjs",
+  "outputfilename": "scan-organizer",
+  "debounceMS": 100,
+  "devServer": "",
+  "info": {
+    "companyName": "joshrainwater",
+    "productName": "Scan Organizer",
+    "productVersion": "1.0.0"
+  }
+}
+
