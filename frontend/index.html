@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Scan Organizer</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background-color: #eee;
+    }
+    .container {
+      display: flex;
+    }
+    .sidebar {
+      flex: none;
+      width: 33%;
+      padding: 2rem;
+      box-sizing: border-box;
+    }
+    .preview {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #fff;
+      border-left: 1px solid #ddd;
+    }
+    .preview img {
+      max-height: 50rem;
+      border: 1px solid #ddd;
+    }
+    input[type="text"], select {
+      display: block;
+      width: 100%;
+      margin-bottom: 1rem;
+      padding: 0.5rem;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 0.5rem 1rem;
+    }
+    .error {
+      color: #b00020;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="sidebar">
+      <div id="error" class="error"></div>
+      <form id="renameForm">
+        <input id="folderInput"
+               name="folder"
+               type="text"
+               list="folders"
+               placeholder="Select or type folder name..."
+               autocomplete="off"
+               autofocus />
+        <datalist id="folders"></datalist>
+        <input id="newNameInput"
+               type="text"
+               name="newname"
+               placeholder="Rename to..."
+               required />
+        <button type="submit">Rename</button>
+      </form>
+      <hr>
+      <form id="trashForm">
+        <button id="trashButton" type="submit">Trash</button>
+      </form>
+      <hr>
+      <form id="appendForm">
+        <select id="targetSelect" name="target"></select>
+        <button type="submit">Append to selected</button>
+      </form>
+    </div>
+    <div class="preview">
+      <img id="previewImage" alt="Preview">
+    </div>
+  </div>
+
+  <script>
+    const folderInput = document.getElementById('folderInput');
+    const foldersDatalist = document.getElementById('folders');
+    const targetSelect = document.getElementById('targetSelect');
+    const previewImage = document.getElementById('previewImage');
+    const errorDiv = document.getElementById('error');
+
+    async function refresh() {
+      errorDiv.textContent = '';
+      try {
+        const data = await window.go.main.App.GetPreview();
+        if (!data) {
+          errorDiv.textContent = 'No PDFs found.';
+          previewImage.src = '';
+          targetSelect.innerHTML = '';
+          foldersDatalist.innerHTML = '';
+          return;
+        }
+
+        previewImage.src = data.preview;
+
+        foldersDatalist.innerHTML = '';
+        (data.folders || []).forEach(folder => {
+          const option = document.createElement('option');
+          option.value = folder;
+          option.textContent = folder;
+          foldersDatalist.appendChild(option);
+        });
+
+        targetSelect.innerHTML = '';
+        (data.previousRenamed || []).forEach(name => {
+          const option = document.createElement('option');
+          option.value = name;
+          option.textContent = name;
+          targetSelect.appendChild(option);
+        });
+      } catch (e) {
+        console.error(e);
+        errorDiv.textContent = e && e.message ? e.message : String(e);
+      }
+
+      // Ensure folder input is focused after each refresh
+      folderInput.focus();
+    }
+
+    document.getElementById('renameForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const folder = folderInput.value.trim();
+      const newName = document.getElementById('newNameInput').value.trim();
+      try {
+        await window.go.main.App.Rename(newName, folder);
+        document.getElementById('newNameInput').value = '';
+        await refresh();
+      } catch (err) {
+        console.error(err);
+        errorDiv.textContent = err && err.message ? err.message : String(err);
+      }
+    });
+
+    document.getElementById('trashForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await window.go.main.App.Trash();
+        await refresh();
+      } catch (err) {
+        console.error(err);
+        errorDiv.textContent = err && err.message ? err.message : String(err);
+      }
+    });
+
+    document.getElementById('appendForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const target = targetSelect.value;
+      try {
+        await window.go.main.App.Append(target);
+        await refresh();
+      } catch (err) {
+        console.error(err);
+        errorDiv.textContent = err && err.message ? err.message : String(err);
+      }
+    });
+
+    document.addEventListener('keydown', function(e) {
+      if (e.ctrlKey) {
+        switch (e.key) {
+          case '1':
+            e.preventDefault();
+            folderInput.focus();
+            break;
+          case '2':
+            e.preventDefault();
+            document.getElementById('trashButton').focus();
+            break;
+          case '3':
+            e.preventDefault();
+            targetSelect.focus();
+            break;
+        }
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', refresh);
+  </script>
+</body>
+</html>
+
