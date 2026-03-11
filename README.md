@@ -1,110 +1,65 @@
-# PDF Manager Web Tool
+# Scan Organizer
 
-This is a lightweight local web-based tool written in Go that helps you manage a folder of PDF files. It allows you to:
+A privacy-focused, local-only desktop application for organizing scanned PDF documents.
 
-- Preview the first page of each PDF
-- Rename PDFs
-- Append a PDF to the end of a previously renamed file (merging)
-- Iterate through PDFs one-by-one in a browser interface
+## Features
 
----
+- Preview PDF pages
+- Rename and organize PDFs into folders
+- Merge/append multiple PDFs
+- Drag-and-drop import
+- OCR text extraction (coming soon)
+- Smart suggestions based on document content (coming soon)
 
-## 🔧 Requirements
+## Philosophy
 
-Make sure you have the following installed:
+- **Local-only** - No cloud, no network, no telemetry
+- **Privacy-first** - Your documents never leave your machine
+- **Simple but powerful** - Easy for anyone, powerful enough for power users
 
-### 1. **Go** (1.18 or later)
+## Tech Stack
 
-Install from: [https://golang.org/dl/](https://golang.org/dl/)
+- [Wails](https://wails.io/) - Go desktop framework
+- React/Vue (frontend - coming soon)
+- Tesseract OCR (planned)
 
-### 2. **pdftoppm**
+## Installation
 
-Used to generate a PNG preview of the first page.
+Download the latest release for your platform from the releases page.
 
-Install via:
-```bash
-sudo apt install poppler-utils
-```
+## Development
 
-### 3. **pdfcpu**
+### Requirements
 
-Used to merge PDF files.
+- Go 1.21+
+- Node.js (for frontend)
+- pdftoppm (for PDF previews)
+- pdfcpu (for PDF merging)
 
-Install via:
-
-```bash
-go install github.com/pdfcpu/pdfcpu/cmd/pdfcpu@latest
-```
-
-Make sure `pdfcpu` is available in your `$PATH`:
-
-```bash
-pdfcpu version
-```
-
-Note that the default directory for go binaries is $HOME/go/bin
-
----
-
-## 📂 Folder Structure
-
-```
-project-root/
-├── input/         # Place your PDFs here
-├── output/        # Renamed and merged PDFs go here
-├── static/
-│   └── previews/  # Auto-generated PNG previews
-├── main.go        # The Go web app
-```
-
----
-
-## 🚀 Running the Tool
-
-From the project root directory, run:
+### Running
 
 ```bash
 go run main.go
 ```
 
-Then open your browser and go to:
+### Building
+
+```bash
+wails build
+```
+
+## Folder Structure
 
 ```
-http://localhost:8080
+project-root/
+├── input/         # Place PDFs to organize
+├── output/        # Organized PDFs
+├── static/
+│   └── previews/  # Auto-generated previews
+├── trash/         # Discarded files
+└── main.go        # Application entry point
 ```
 
----
+## License
 
-## 🖱 How to Use
-
-1. Place all your PDFs into the `input/` folder.
-2. Start the server and open the web UI.
-3. For each file:
-   - View a preview of the first page.
-   - Use the input field to rename the file. It will be moved to the `output/` folder.
-   - Or, use the dropdown to append it to a previously renamed file.
-4. Use the **Next** / **Prev** buttons to navigate.
-
----
-
-## 📌 Notes
-
-- Only PDFs are recognized in the `input/` folder.
-- Preview is auto-generated for the first page only.
-- Renamed files are stored in `output/`.
-- Merging appends the entire current PDF to the selected file.
-
----
-
-## 📄 License
-
-MIT License
-
----
-
-## 🙏 Acknowledgements
-
-- [pdfcpu](https://github.com/pdfcpu/pdfcpu)
-- [Poppler Utils](https://poppler.freedesktop.org/)
-
-
+MIT
