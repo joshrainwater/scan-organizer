@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=tmp_init
+Exec=tmp_init
+Icon=tmp_init
+Categories=Development;
+Terminal=false
+Keywords=wails
+Version=1.0
+StartupNotify=false
