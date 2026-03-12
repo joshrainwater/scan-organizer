@@ -1,23 +1,22 @@
-import { useState, useEffect, useCallback } from 'react';
-import { GetPreview, Rename, Append, Trash, GetOutputFoldersRecursive, GetInputFiles } from '../../wailsjs/wailsjs/go/main/App';
-
-interface PreviewData {
-  preview: string;
-  previousRenamed: string[];
-  folders: string[];
-}
+import { useState, useCallback } from 'react';
+import * as App from '../../bindings/github.com/joshrainwater/scan-organizer/app';
+import { PreviewData } from '../../bindings/github.com/joshrainwater/scan-organizer/internal/scanorganizer/models';
 
 export function usePreview() {
   const [data, setData] = useState<PreviewData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const result = await GetPreview();
-      setData(result);
+      const result = await App.GetPreview();
+      if (result) {
+        setData(result);
+      } else {
+        setData(null);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setData(null);
@@ -26,62 +25,46 @@ export function usePreview() {
     }
   }, []);
 
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  const rename = async (newName: string, folder: string) => {
-    await Rename(newName, folder);
-    await refresh();
-  };
-
-  const append = async (target: string) => {
-    await Append(target);
-    await refresh();
-  };
-
-  const trash = async () => {
-    await Trash();
-    await refresh();
-  };
-
-  return { data, loading, error, refresh, rename, append, trash };
-}
-
-export function useFolders() {
-  const [folders, setFolders] = useState<string[]>([]);
-
-  const refresh = useCallback(async () => {
+  const rename = useCallback(async (newName: string, folder: string) => {
+    setError(null);
     try {
-      const result = await GetOutputFoldersRecursive();
-      setFolders(result);
+      await App.Rename(newName, folder);
+      await refresh();
     } catch (e) {
-      console.error('Failed to load folders:', e);
+      setError(e instanceof Error ? e.message : String(e));
+      throw e;
     }
-  }, []);
-
-  useEffect(() => {
-    refresh();
   }, [refresh]);
 
-  return { folders, refresh };
-}
-
-export function useInputFiles() {
-  const [files, setFiles] = useState<string[]>([]);
-
-  const refresh = useCallback(async () => {
+  const append = useCallback(async (target: string) => {
+    setError(null);
     try {
-      const result = await GetInputFiles();
-      setFiles(result);
+      await App.Append(target);
+      await refresh();
     } catch (e) {
-      console.error('Failed to load input files:', e);
+      setError(e instanceof Error ? e.message : String(e));
+      throw e;
     }
-  }, []);
-
-  useEffect(() => {
-    refresh();
   }, [refresh]);
 
-  return { files, refresh };
+  const trash = useCallback(async () => {
+    setError(null);
+    try {
+      await App.Trash();
+      await refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      throw e;
+    }
+  }, [refresh]);
+
+  return {
+    data,
+    loading,
+    error,
+    rename,
+    append,
+    trash,
+    refresh,
+  };
 }
