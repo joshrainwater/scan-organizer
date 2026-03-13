@@ -11,6 +11,15 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 import * as scanorganizer$0 from "./internal/scanorganizer/models.js";
 
 /**
+ * @param {string[]} paths
+ * @param {string} mode
+ * @returns {$CancellablePromise<void>}
+ */
+export function AddFiles(paths, mode) {
+    return $Call.ByID(2632649643, paths, mode);
+}
+
+/**
  * @param {string} target
  * @returns {$CancellablePromise<void>}
  */
@@ -19,10 +28,27 @@ export function Append(target) {
 }
 
 /**
+ * @param {string} destination
+ * @returns {$CancellablePromise<void>}
+ */
+export function Export(destination) {
+    return $Call.ByID(1718700699, destination);
+}
+
+/**
  * @returns {$CancellablePromise<string[]>}
  */
 export function GetInputFiles() {
     return $Call.ByID(1806227512).then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType0($result);
+    }));
+}
+
+/**
+ * @returns {$CancellablePromise<string[]>}
+ */
+export function GetOutputFiles() {
+    return $Call.ByID(1470086069).then(/** @type {($result: any) => any} */(($result) => {
         return $$createType0($result);
     }));
 }
@@ -46,6 +72,15 @@ export function GetPreview() {
 }
 
 /**
+ * @returns {$CancellablePromise<scanorganizer$0.StatusData | null>}
+ */
+export function GetStatus() {
+    return $Call.ByID(1043986649).then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType4($result);
+    }));
+}
+
+/**
  * @param {string} newName
  * @param {string} folder
  * @returns {$CancellablePromise<void>}
@@ -65,3 +100,5 @@ export function Trash() {
 const $$createType0 = $Create.Array($Create.Any);
 const $$createType1 = scanorganizer$0.PreviewData.createFrom;
 const $$createType2 = $Create.Nullable($$createType1);
+const $$createType3 = scanorganizer$0.StatusData.createFrom;
+const $$createType4 = $Create.Nullable($$createType3);

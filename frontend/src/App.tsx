@@ -1,12 +1,14 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePreview } from './hooks/usePreview';
 import { Preview } from './components/Preview';
 import { RenameForm } from './components/RenameForm';
 import { AppendForm } from './components/AppendForm';
 import { TrashButton } from './components/TrashButton';
 import { Toast } from './components/Toast';
+import { Home } from './pages/Home';
+import * as App from './bindings/github.com/joshrainwater/scan-organizer/app';
 
-function App() {
+function Organizer() {
   const { data, loading, error, rename, append, trash, refresh } = usePreview();
   const folderInputRef = useRef<HTMLInputElement>(null);
   const trashButtonRef = useRef<HTMLButtonElement>(null);
@@ -74,6 +76,46 @@ function App() {
       <Preview src={data?.preview || null} loading={loading} />
     </div>
   );
+}
+
+function App() {
+  const [isReady, setIsReady] = useState(false);
+  const [checkDone, setCheckDone] = useState(false);
+
+  useEffect(() => {
+    const checkStaging = async () => {
+      try {
+        const status = await App.GetStatus();
+        if (status.inputCount > 0 || status.outputCount > 0) {
+          setIsReady(true);
+        }
+      } catch (e) {
+        console.error('Failed to check staging status:', e);
+      } finally {
+        setCheckDone(true);
+      }
+    };
+
+    checkStaging();
+  }, []);
+
+  const handleReady = () => {
+    setIsReady(true);
+  };
+
+  if (!checkDone) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-gray-500">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!isReady) {
+    return <Home onReady={handleReady} />;
+  }
+
+  return <Organizer />;
 }
 
 export default App;

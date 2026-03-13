@@ -12,7 +12,7 @@ type App struct {
 }
 
 func NewApp() *App {
-	service, err := scanorganizer.NewService("./input", "./static/previews", "./output", "./trash")
+	service, err := scanorganizer.NewService("./staging")
 	if err != nil {
 		panic(err)
 	}
@@ -26,7 +26,6 @@ func (a *App) startup(ctx context.Context) {
 }
 
 func (a *App) shutdown(_ context.Context) {
-	// no-op for now
 }
 
 func (a *App) GetPreview() (*scanorganizer.PreviewData, error) {
@@ -53,3 +52,18 @@ func (a *App) GetInputFiles() []string {
 	return a.service.GetInputFiles()
 }
 
+func (a *App) GetOutputFiles() []string {
+	return a.service.GetOutputFiles()
+}
+
+func (a *App) AddFiles(paths []string, mode string) error {
+	return a.service.AddFiles(paths, mode)
+}
+
+func (a *App) Export(destination string) error {
+	return a.service.Export(destination)
+}
+
+func (a *App) GetStatus() (*scanorganizer.StatusData, error) {
+	return a.service.GetStatus()
+}
