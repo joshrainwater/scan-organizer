@@ -45,15 +45,17 @@ func main() {
 	// 'URL' is the URL that will be loaded into the webview.
 	app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title: "Scan Organizer",
+		Width:  1200,
+		Height: 800,
+		EnableFileDrop: true,
+		BackgroundColour: application.NewRGB(27, 38, 54),
 		Mac: application.MacWindow{
 			InvisibleTitleBarHeight: 50,
 			Backdrop:                application.MacBackdropTranslucent,
 			TitleBar:                application.MacTitleBarHiddenInset,
 		},
-		BackgroundColour: application.NewRGB(27, 38, 54),
 		URL:              "/",
-		// Width:  1200,
-		// Height: 800,
+
 	})
 
 	// Run the application. This blocks until the application has been exited.

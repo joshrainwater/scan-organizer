@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useDropzone } from '../hooks/useDropzone';
-import * as App from '../../bindings/github.com/joshrainwater/scan-organizer/app';
+import * as App from '@bindings/github.com/joshrainwater/scan-organizer/app';
 
 interface ModeDialogProps {
   isOpen: boolean;

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import * as App from '../../bindings/github.com/joshrainwater/scan-organizer/app';
-import { PreviewData } from '../../bindings/github.com/joshrainwater/scan-organizer/internal/scanorganizer/models';
+import * as App from '@bindings/github.com/joshrainwater/scan-organizer/app';
+import { PreviewData } from '@bindings/github.com/joshrainwater/scan-organizer/internal/scanorganizer/models';
 
 export function usePreview() {
   const [data, setData] = useState<PreviewData | null>(null);
