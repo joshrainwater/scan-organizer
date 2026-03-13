@@ -56,5 +56,47 @@ export class PreviewData {
     }
 }
 
+export class StatusData {
+    /**
+     * Creates a new StatusData instance.
+     * @param {Partial<StatusData>} [$$source = {}] - The source object to create the StatusData.
+     */
+    constructor($$source = {}) {
+        if (!("inputCount" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["inputCount"] = 0;
+        }
+        if (!("outputCount" in $$source)) {
+            /**
+             * @member
+             * @type {number}
+             */
+            this["outputCount"] = 0;
+        }
+        if (!("isFullyProcessed" in $$source)) {
+            /**
+             * @member
+             * @type {boolean}
+             */
+            this["isFullyProcessed"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new StatusData instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {StatusData}
+     */
+    static createFrom($$source = {}) {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new StatusData(/** @type {Partial<StatusData>} */($$parsedSource));
+    }
+}
+
 // Private type creation functions
 const $$createType0 = $Create.Array($Create.Any);
