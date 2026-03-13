@@ -6,7 +6,7 @@ import { AppendForm } from './components/AppendForm';
 import { TrashButton } from './components/TrashButton';
 import { Toast } from './components/Toast';
 import { Home } from './pages/Home';
-import * as App from './bindings/github.com/joshrainwater/scan-organizer/app';
+import * as AppBindings from '@bindings/github.com/joshrainwater/scan-organizer/app';
 
 function Organizer() {
   const { data, loading, error, rename, append, trash, refresh } = usePreview();
@@ -85,7 +85,7 @@ function App() {
   useEffect(() => {
     const checkStaging = async () => {
       try {
-        const status = await App.GetStatus();
+        const status = await AppBindings.GetStatus();
         if (status.inputCount > 0 || status.outputCount > 0) {
           setIsReady(true);
         }
