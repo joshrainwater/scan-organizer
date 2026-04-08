@@ -4,15 +4,22 @@ import { Preview } from './components/Preview';
 import { RenameForm } from './components/RenameForm';
 import { AppendForm } from './components/AppendForm';
 import { TrashButton } from './components/TrashButton';
+import { ExportButton } from './components/ExportButton';
 import { Toast } from './components/Toast';
 import { Home } from './pages/Home';
 import * as AppBindings from '@bindings/github.com/joshrainwater/scan-organizer/app';
 
-function Organizer() {
-  const { data, loading, error, rename, append, trash, refresh } = usePreview();
+interface OrganizerProps {
+  outputCount: number;
+  onExportSuccess: () => void;
+}
+
+function Organizer({ outputCount, onExportSuccess }: OrganizerProps) {
+  const { data, loading, error, rename, append, trash, exportFiles, refresh } = usePreview();
   const folderInputRef = useRef<HTMLInputElement>(null);
   const trashButtonRef = useRef<HTMLButtonElement>(null);
   const appendSelectRef = useRef<HTMLSelectElement>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -40,12 +47,24 @@ function Organizer() {
 
   const hasFiles = data && (data.preview || loading);
 
+  const handleExportSuccess = () => {
+    setSuccessMessage('Export complete! Returning to home...');
+    setTimeout(() => {
+      onExportSuccess();
+    }, 1500);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 flex">
       <div className="w-1/3 p-8 flex flex-col gap-6">
         <Toast 
           message={error} 
+          variant="error"
           onClose={refresh}
+        />
+        <Toast 
+          message={successMessage} 
+          variant="success"
         />
 
         <div>
@@ -64,6 +83,14 @@ function Organizer() {
                 previousRenamed={data?.previousRenamed || []}
                 onAppend={append}
               />
+              <hr className="my-6 border-gray-300" />
+              {outputCount > 0 && (
+                <ExportButton
+                  onExport={exportFiles}
+                  fileCount={outputCount}
+                  onSuccess={handleExportSuccess}
+                />
+              )}
             </>
           ) : (
             <div className="text-gray-500 text-center py-8">
@@ -81,26 +108,38 @@ function Organizer() {
 function App() {
   const [isReady, setIsReady] = useState(false);
   const [checkDone, setCheckDone] = useState(false);
+  const [outputCount, setOutputCount] = useState(0);
+
+  const checkStaging = async () => {
+    try {
+      const status = await AppBindings.GetStatus();
+      setOutputCount(status.outputCount);
+      if (status.inputCount > 0 || status.outputCount > 0) {
+        setIsReady(true);
+      }
+    } catch (e) {
+      console.error('Failed to check staging status:', e);
+    } finally {
+      setCheckDone(true);
+    }
+  };
 
   useEffect(() => {
-    const checkStaging = async () => {
-      try {
-        const status = await AppBindings.GetStatus();
-        if (status.inputCount > 0 || status.outputCount > 0) {
-          setIsReady(true);
-        }
-      } catch (e) {
-        console.error('Failed to check staging status:', e);
-      } finally {
-        setCheckDone(true);
-      }
-    };
-
     checkStaging();
   }, []);
 
   const handleReady = () => {
     setIsReady(true);
+  };
+
+  const handleExportSuccess = async () => {
+    const status = await AppBindings.GetStatus();
+    if (status.inputCount === 0) {
+      setIsReady(false);
+      setOutputCount(0);
+    } else {
+      setOutputCount(status.outputCount);
+    }
   };
 
   if (!checkDone) {
@@ -115,7 +154,7 @@ function App() {
     return <Home onReady={handleReady} />;
   }
 
-  return <Organizer />;
+  return <Organizer outputCount={outputCount} onExportSuccess={handleExportSuccess} />;
 }
 
 export default App;

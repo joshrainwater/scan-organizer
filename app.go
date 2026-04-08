@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/joshrainwater/scan-organizer/internal/scanorganizer"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 type App struct {
@@ -66,4 +67,20 @@ func (a *App) Export(destination string) error {
 
 func (a *App) GetStatus() (*scanorganizer.StatusData, error) {
 	return a.service.GetStatus()
+}
+
+func (a *App) SelectExportDirectory() (string, error) {
+	path, err := application.Get().Dialog.OpenFile().
+		SetTitle("Select Export Destination").
+		CanChooseDirectories(true).
+		CanChooseFiles(false).
+		PromptForSingleSelection()
+
+	if err != nil {
+		return "", err
+	}
+	if path == "" {
+		return "", nil
+	}
+	return path, nil
 }

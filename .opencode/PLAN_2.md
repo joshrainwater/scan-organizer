@@ -12,12 +12,13 @@ A desktop application for organizing scanned PDF documents. Users drag files/fol
 3. Drag-and-drop homepage with mode selection (replace/append/skip)
 4. Basic organizer view (preview, rename, append, trash)
 5. Frontend builds successfully
+6. Export button UI with native directory picker
+7. Success/error toast notifications
 
 ### Pending
 1. Regenerate Go bindings (run `wails dev`)
-2. Test the complete flow
-3. Add Export button UI to organizer
-4. Any additional features as requested
+2. End-to-end testing of complete flow
+3. Verify export functionality
 
 ---
 
@@ -80,6 +81,7 @@ A desktop application for organizing scanned PDF documents. Users drag files/fol
 | `GetInputFiles` | - | `[]string` | List input files |
 | `GetOutputFiles` | - | `[]string` | List output files |
 | `Export` | `destination string` | `error` | Move output to destination |
+| `SelectExportDirectory` | - | `string, error` | Open native directory picker |
 
 ---
 
@@ -102,10 +104,8 @@ A desktop application for organizing scanned PDF documents. Users drag files/fol
 
 ## Next Steps
 
-1. **Run `wails dev`** to regenerate bindings and test
-2. **Verify** the drag-drop flow works end-to-end
-3. **Add Export button** to the organizer view
-4. **Test** export moves files correctly
+1. **Run `wails dev`** to regenerate bindings (includes new SelectExportDirectory method)
+2. **End-to-end testing** of complete flow including export
 
 ---
 

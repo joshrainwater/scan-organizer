@@ -90,6 +90,13 @@ export function Rename(newName, folder) {
 }
 
 /**
+ * @returns {$CancellablePromise<string>}
+ */
+export function SelectExportDirectory() {
+    return $Call.ByID(3958356690);
+}
+
+/**
  * @returns {$CancellablePromise<void>}
  */
 export function Trash() {

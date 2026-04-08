@@ -58,6 +58,17 @@ export function usePreview() {
     }
   }, [refresh]);
 
+  const exportFiles = useCallback(async (destination: string) => {
+    setError(null);
+    try {
+      await App.Export(destination);
+      await refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      throw e;
+    }
+  }, [refresh]);
+
   return {
     data,
     loading,
@@ -65,6 +76,7 @@ export function usePreview() {
     rename,
     append,
     trash,
+    exportFiles,
     refresh,
   };
 }
